@@ -1,0 +1,4 @@
+interface:
+  display_name: "MinerU PDF Parser"
+  short_description: "Parse PDFs with MinerU on Ubuntu or Windows WSL."
+  default_prompt: "Parse this PDF with MinerU and write Markdown output to a local output folder."
