@@ -11,7 +11,8 @@ param(
     [string]$VenvPath = '~/venvs/mineru',
     [string]$ModelSource = '',
     [switch]$Install,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$KeepIntermediate
 )
 
 Set-StrictMode -Version Latest
@@ -120,6 +121,37 @@ function Get-SafeName {
     return $safe
 }
 
+function Remove-IntermediateOutputs {
+    param([Parameter(Mandatory = $true)][string]$Root)
+
+    if (-not (Test-Path -LiteralPath $Root -PathType Container)) {
+        return
+    }
+
+    $imageExtensions = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
+    @('.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tif', '.tiff', '.svg') | ForEach-Object {
+        [void]$imageExtensions.Add($_)
+    }
+
+    Get-ChildItem -LiteralPath $Root -Recurse -File -Force -ErrorAction SilentlyContinue | ForEach-Object {
+        $isMarkdown = $_.Extension.Equals('.md', [System.StringComparison]::OrdinalIgnoreCase)
+        $isImageAsset = $_.Directory.Name.Equals('images', [System.StringComparison]::OrdinalIgnoreCase) -and
+            $imageExtensions.Contains($_.Extension)
+
+        if (-not ($isMarkdown -or $isImageAsset)) {
+            Remove-Item -LiteralPath $_.FullName -Force
+        }
+    }
+
+    Get-ChildItem -LiteralPath $Root -Recurse -Directory -Force -ErrorAction SilentlyContinue |
+        Sort-Object { $_.FullName.Length } -Descending |
+        ForEach-Object {
+            if (-not (Get-ChildItem -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue | Select-Object -First 1)) {
+                Remove-Item -LiteralPath $_.FullName -Force
+            }
+        }
+}
+
 $resolvedDistro = Resolve-WslDistro -Requested $Distro
 $backendOutputRoot = Join-Path $OutputRoot $Backend
 New-Item -ItemType Directory -Force -Path $backendOutputRoot | Out-Null
@@ -175,6 +207,11 @@ foreach ($path in $InputPath) {
             throw "MinerU failed for $windowsInput with exit code $LASTEXITCODE"
         }
     }
+}
+
+if (-not $DryRun -and -not $KeepIntermediate) {
+    Write-Host "Cleaning intermediate outputs; keeping Markdown files and images folders."
+    Remove-IntermediateOutputs -Root $backendOutputRoot
 }
 
 Write-Host "Markdown files:"

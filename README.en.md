@@ -4,7 +4,7 @@
 
 A Codex skill for running MinerU PDF and document parsing on Ubuntu/Linux or Windows through WSL2.
 
-MinerU converts PDFs, images, and Office documents into Markdown, JSON, and extracted assets. This skill does not reimplement MinerU. It wraps the practical workflow around MinerU: installation guidance, Windows-to-WSL path conversion, backend selection, output directory conventions, and repeatable runner scripts.
+MinerU converts PDFs, images, and Office documents into Markdown and extracted image assets. This skill does not reimplement MinerU. It wraps the practical workflow around MinerU: installation guidance, Windows-to-WSL path conversion, backend selection, output directory conventions, and repeatable runner scripts.
 
 ## What It Includes
 
@@ -41,6 +41,8 @@ Remove the dry-run flag after checking the generated command, input path, and ou
 
 - Use `pipeline` as the fallback backend when GPU/VLM parsing fails or resources are limited.
 - The runners pass only the backend output root to MinerU's `-o`; MinerU creates per-document result directories itself.
+- Successful runs clean MinerU JSON and other intermediate files by default, keeping only `.md` files and non-empty `images` folders.
+- Use `-KeepIntermediate` on Windows or `--keep-intermediate` on Linux only when debugging raw MinerU output.
 - See `SKILL.md` for full installation, model source, path conversion, and troubleshooting guidance.
 
 ## References

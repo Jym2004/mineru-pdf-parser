@@ -1,6 +1,6 @@
 ---
 name: mineru-pdf-parser
-description: Parse PDFs or document files with MinerU on Ubuntu/Linux or Windows through WSL2. Use when Codex needs to install MinerU, choose between native Ubuntu and Windows WSL workflows, convert Windows paths to WSL paths, run MinerU backends such as pipeline, vlm-auto-engine, or hybrid-auto-engine, and save Markdown, JSON, and image outputs without relying on machine-specific private paths.
+description: Parse PDFs or document files with MinerU on Ubuntu/Linux or Windows through WSL2. Use when Codex needs to install MinerU, choose between native Ubuntu and Windows WSL workflows, convert Windows paths to WSL paths, run MinerU backends such as pipeline, vlm-auto-engine, or hybrid-auto-engine, and save Markdown plus image outputs without relying on machine-specific private paths.
 ---
 
 # MinerU PDF Parser
@@ -153,6 +153,7 @@ bash "<skill-dir>/scripts/mineru-linux.sh" \
 ```
 
 Use `--install` when the virtual environment does not exist. Use `--model-source modelscope` when needed.
+By default, the runner removes MinerU JSON and other intermediate files after a successful run, keeping only Markdown files and files inside `images` directories. Pass `--keep-intermediate` only when debugging MinerU raw output.
 
 Raw equivalent:
 
@@ -188,6 +189,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-dir>\scripts\mineru-
 ```
 
 Remove `-DryRun` after the printed command and output root look correct. Pass `-Distro "<DistroName>"` when auto-selection chooses the wrong distro. Pass `-Install` when MinerU is not installed in the selected distro.
+By default, the runner removes MinerU JSON and other intermediate files after a successful run, keeping only Markdown files and files inside `images` directories. Pass `-KeepIntermediate` only when debugging MinerU raw output.
 
 Raw equivalent:
 
@@ -223,6 +225,8 @@ Examples:
 ```
 
 The backend-specific result directory name is created by MinerU and may vary by version and backend. After completion, find Markdown with:
+
+The bundled runners clean successful outputs by default. The retained tree should contain the generated `.md` files and any non-empty `images` folders with image assets. Use `--keep-intermediate` on Linux or `-KeepIntermediate` on Windows only when the intermediate JSON/layout files are needed for troubleshooting.
 
 ```bash
 find "$HOME/mineru-output" -name "*.md" -print

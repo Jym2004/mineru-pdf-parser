@@ -18,6 +18,8 @@ Options:
       Create the venv and install mineru[all] before running.
   --dry-run
       Print commands without executing MinerU.
+  --keep-intermediate
+      Keep MinerU JSON and other intermediate files. Default keeps only Markdown and images.
   -h, --help
       Show this help.
 EOF
@@ -29,6 +31,7 @@ venv_path="$HOME/venvs/mineru"
 model_source=""
 install=0
 dry_run=0
+keep_intermediate=0
 inputs=()
 
 while [[ $# -gt 0 ]]; do
@@ -64,6 +67,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --dry-run)
       dry_run=1
+      shift
+      ;;
+    --keep-intermediate)
+      keep_intermediate=1
       shift
       ;;
     -h|--help)
@@ -109,6 +116,35 @@ activate_venv() {
   fi
 }
 
+clean_intermediate_outputs() {
+  local root="$1"
+  [[ -d "$root" ]] || return 0
+
+  while IFS= read -r -d '' file; do
+    local filename parent ext
+    filename="$(basename "$file")"
+    parent="$(basename "$(dirname "$file")")"
+    ext="${filename##*.}"
+    ext="${ext,,}"
+
+    if [[ "$ext" == "md" ]]; then
+      continue
+    fi
+
+    if [[ "$parent" == "images" ]]; then
+      case "$ext" in
+        jpg|jpeg|png|webp|gif|bmp|tif|tiff|svg)
+          continue
+          ;;
+      esac
+    fi
+
+    rm -f -- "$file"
+  done < <(find "$root" -type f -print0)
+
+  find "$root" -depth -type d -empty -delete
+}
+
 if [[ "$install" -eq 1 ]]; then
   run_cmd sudo apt update
   run_cmd sudo apt install -y python3 python3-venv python3-pip build-essential
@@ -145,6 +181,11 @@ for input in "${inputs[@]}"; do
   printf 'Expected per-document directory: %s/%s\n' "$backend_output_root" "$doc_name"
   run_cmd mineru -p "$input" -o "$backend_output_root" -b "$backend"
 done
+
+if [[ "$dry_run" -eq 0 && "$keep_intermediate" -eq 0 ]]; then
+  printf 'Cleaning intermediate outputs; keeping Markdown files and images folders.\n'
+  clean_intermediate_outputs "$backend_output_root"
+fi
 
 printf 'Markdown files:\n'
 find "$backend_output_root" -name '*.md' -print 2>/dev/null || true
