@@ -121,6 +121,24 @@ function Get-SafeName {
     return $safe
 }
 
+function ConvertTo-LongPath {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    if ($Path.StartsWith('\\?\', [System.StringComparison]::Ordinal)) {
+        return $Path
+    }
+
+    if ($Path.StartsWith('\\', [System.StringComparison]::Ordinal)) {
+        return '\\?\UNC\' + $Path.Substring(2)
+    }
+
+    if ($Path -match '^[A-Za-z]:\\') {
+        return '\\?\' + $Path
+    }
+
+    return $Path
+}
+
 function Remove-IntermediateOutputs {
     param([Parameter(Mandatory = $true)][string]$Root)
 
@@ -128,28 +146,48 @@ function Remove-IntermediateOutputs {
         return
     }
 
+    $resolvedRoot = [System.IO.Path]::GetFullPath($Root).TrimEnd('\')
+
     $imageExtensions = [System.Collections.Generic.HashSet[string]]::new([System.StringComparer]::OrdinalIgnoreCase)
     @('.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp', '.tif', '.tiff', '.svg') | ForEach-Object {
         [void]$imageExtensions.Add($_)
     }
 
-    Get-ChildItem -LiteralPath $Root -Recurse -File -Force -ErrorAction SilentlyContinue | ForEach-Object {
-        $isMarkdown = $_.Extension.Equals('.md', [System.StringComparison]::OrdinalIgnoreCase)
-        $isImageAsset = $_.Directory.Name.Equals('images', [System.StringComparison]::OrdinalIgnoreCase) -and
-            $imageExtensions.Contains($_.Extension)
+    $files = @(Get-ChildItem -LiteralPath $resolvedRoot -Recurse -File -Force -ErrorAction SilentlyContinue)
+    foreach ($file in $files) {
+        $fullName = $file.FullName
+        if (-not $fullName.StartsWith($resolvedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            continue
+        }
+
+        $isMarkdown = $file.Extension.Equals('.md', [System.StringComparison]::OrdinalIgnoreCase)
+        $isImageAsset = $file.Directory.Name.Equals('images', [System.StringComparison]::OrdinalIgnoreCase) -and
+            $imageExtensions.Contains($file.Extension)
 
         if (-not ($isMarkdown -or $isImageAsset)) {
-            Remove-Item -LiteralPath $_.FullName -Force
+            [System.IO.File]::Delete((ConvertTo-LongPath -Path $fullName))
         }
     }
 
-    Get-ChildItem -LiteralPath $Root -Recurse -Directory -Force -ErrorAction SilentlyContinue |
-        Sort-Object { $_.FullName.Length } -Descending |
-        ForEach-Object {
-            if (-not (Get-ChildItem -LiteralPath $_.FullName -Force -ErrorAction SilentlyContinue | Select-Object -First 1)) {
-                Remove-Item -LiteralPath $_.FullName -Force
+    $directories = @(Get-ChildItem -LiteralPath $resolvedRoot -Recurse -Directory -Force -ErrorAction SilentlyContinue |
+        Sort-Object { $_.FullName.Length } -Descending)
+    foreach ($directory in $directories) {
+        $fullName = $directory.FullName
+        if (-not $fullName.StartsWith($resolvedRoot, [System.StringComparison]::OrdinalIgnoreCase)) {
+            continue
+        }
+
+        $longPath = ConvertTo-LongPath -Path $fullName
+        $entries = [System.IO.Directory]::EnumerateFileSystemEntries($longPath).GetEnumerator()
+        try {
+            if (-not $entries.MoveNext()) {
+                [System.IO.Directory]::Delete($longPath, $false)
             }
         }
+        finally {
+            $entries.Dispose()
+        }
+    }
 }
 
 $resolvedDistro = Resolve-WslDistro -Requested $Distro
