@@ -41,6 +41,7 @@ Remove the dry-run flag after checking the generated command, input path, and ou
 
 - Use `pipeline` as the fallback backend when GPU/VLM parsing fails or resources are limited.
 - The runners pass only the backend output root to MinerU's `-o`; MinerU creates per-document result directories itself.
+- Install mode uses the latest MinerU release by default. Use `-MineruVersion` on Windows or `--mineru-version` on Linux when a pinned version is required.
 - Successful runs clean MinerU JSON and other intermediate files by default, keeping only `.md` files and non-empty `images` folders.
 - Use `-KeepIntermediate` on Windows or `--keep-intermediate` on Linux only when debugging raw MinerU output.
 - See `SKILL.md` for full installation, model source, path conversion, and troubleshooting guidance.

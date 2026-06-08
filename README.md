@@ -41,6 +41,7 @@ bash "./scripts/mineru-linux.sh" \
 
 - GPU/VLM 解析失败或资源不足时，使用 `pipeline` 作为 fallback backend。
 - runner 只会把 backend 输出根目录传给 MinerU 的 `-o` 参数；每个文档自己的结果目录由 MinerU 创建。
+- 安装模式默认安装最新版 MinerU；需要固定版本时，Windows 使用 `-MineruVersion`，Linux 使用 `--mineru-version`。
 - 成功运行后，runner 默认清理 MinerU JSON 等中间文件，只保留 `.md` 和非空 `images` 图片目录，避免输出目录占用过多空间。
 - 调试 MinerU 原始输出时，Windows 使用 `-KeepIntermediate`，Linux 使用 `--keep-intermediate`。
 - 完整安装、模型源、路径转换和故障处理规则见 `SKILL.md`。

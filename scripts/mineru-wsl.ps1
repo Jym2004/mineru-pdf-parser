@@ -10,6 +10,7 @@ param(
     [string]$Distro = '',
     [string]$VenvPath = '~/venvs/mineru',
     [string]$ModelSource = '',
+    [string]$MineruVersion = '',
     [switch]$Install,
     [switch]$DryRun,
     [switch]$KeepIntermediate
@@ -121,6 +122,16 @@ function Get-SafeName {
     return $safe
 }
 
+function Get-MineruInstallSpec {
+    param([string]$Version)
+
+    if ([string]::IsNullOrWhiteSpace($Version)) {
+        return 'mineru[all]'
+    }
+
+    return "mineru[all]==$Version"
+}
+
 function ConvertTo-LongPath {
     param([Parameter(Mandatory = $true)][string]$Path)
 
@@ -191,6 +202,7 @@ function Remove-IntermediateOutputs {
 }
 
 $resolvedDistro = Resolve-WslDistro -Requested $Distro
+$mineruInstallSpec = Get-MineruInstallSpec -Version $MineruVersion
 $backendOutputRoot = Join-Path $OutputRoot $Backend
 New-Item -ItemType Directory -Force -Path $backendOutputRoot | Out-Null
 $wslOutputRoot = ConvertTo-WslPath -WindowsPath $backendOutputRoot
@@ -203,7 +215,7 @@ if ($Install) {
         "python3 -m venv $(Quote-BashPath $VenvPath)",
         "source $(Quote-BashPath $VenvPath)/bin/activate",
         'python -m pip install --upgrade pip uv',
-        'uv pip install -U "mineru[all]"'
+        "uv pip install -U $(Quote-Bash $mineruInstallSpec)"
     )
 }
 else {

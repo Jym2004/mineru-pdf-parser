@@ -42,9 +42,23 @@ Resolve these values before invoking MinerU:
 - `Distro`: for Windows WSL2, use `wsl -l -v` when not supplied. The WSL runner auto-selects an installed Ubuntu distro when possible.
 - `VenvPath`: default to `~/venvs/mineru`.
 - `ModelSource`: leave unset by default; use `modelscope` when Hugging Face is slow or blocked.
+- `MineruVersion`: leave unset to install the latest available MinerU release; set it only when the user needs a pinned version.
 - `Install`: use only when MinerU is missing or the user asks to install it.
 
 Run the relevant script with `--dry-run` or `-DryRun` first when paths contain spaces, Unicode, or shell-special characters.
+
+## Version Strategy
+
+Do not pin MinerU by default. The runner install mode uses the latest available MinerU release unless the user provides a version. This keeps normal MinerU upgrades independent from skill updates.
+
+Update this skill only when a MinerU release changes CLI flags, backend names, installation extras, model source behavior, or output layout in a way that breaks the documented workflow.
+
+For safer upgrades, install a new environment first, run a representative PDF, then switch the runner to that environment:
+
+```bash
+python3 -m venv ~/venvs/mineru-<version>
+bash "<skill-dir>/scripts/mineru-linux.sh" --input "/path/to/test.pdf" --venv ~/venvs/mineru-<version> --install --mineru-version <version> --dry-run
+```
 
 ## Requirements
 
@@ -122,6 +136,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-dir>\scripts\mineru-
 
 ```bash
 bash "<skill-dir>/scripts/mineru-linux.sh" --input "/path/to/paper.pdf" --install --dry-run
+```
+
+To pin a specific MinerU version during install:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File "<skill-dir>\scripts\mineru-wsl.ps1" `
+  -InputPath "C:\path\to\paper.pdf" `
+  -Install `
+  -MineruVersion "3.2.1" `
+  -DryRun
+```
+
+```bash
+bash "<skill-dir>/scripts/mineru-linux.sh" --input "/path/to/paper.pdf" --install --mineru-version "3.2.1" --dry-run
 ```
 
 ## Model Source

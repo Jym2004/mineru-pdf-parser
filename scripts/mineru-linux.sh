@@ -14,6 +14,8 @@ Options:
       Python virtual environment path. Default: ~/venvs/mineru.
   --model-source VALUE
       Set MINERU_MODEL_SOURCE, for example modelscope, huggingface, or local.
+  --mineru-version VERSION
+      Install a specific MinerU version with --install. Default installs the latest available version.
   --install
       Create the venv and install mineru[all] before running.
   --dry-run
@@ -29,6 +31,7 @@ backend="hybrid-auto-engine"
 output_root="$PWD/mineru-output"
 venv_path="$HOME/venvs/mineru"
 model_source=""
+mineru_version=""
 install=0
 dry_run=0
 keep_intermediate=0
@@ -59,6 +62,11 @@ while [[ $# -gt 0 ]]; do
     --model-source)
       [[ $# -ge 2 ]] || { echo "--model-source requires a value" >&2; exit 2; }
       model_source="$2"
+      shift 2
+      ;;
+    --mineru-version)
+      [[ $# -ge 2 ]] || { echo "--mineru-version requires a value" >&2; exit 2; }
+      mineru_version="$2"
       shift 2
       ;;
     --install)
@@ -146,12 +154,17 @@ clean_intermediate_outputs() {
 }
 
 if [[ "$install" -eq 1 ]]; then
+  mineru_install_spec="mineru[all]"
+  if [[ -n "$mineru_version" ]]; then
+    mineru_install_spec="mineru[all]==$mineru_version"
+  fi
+
   run_cmd sudo apt update
   run_cmd sudo apt install -y python3 python3-venv python3-pip build-essential
   run_cmd python3 -m venv "$venv_path"
   activate_venv
   run_cmd python -m pip install --upgrade pip uv
-  run_cmd uv pip install -U "mineru[all]"
+  run_cmd uv pip install -U "$mineru_install_spec"
 else
   if [[ ! -f "$venv_path/bin/activate" && "$dry_run" -eq 0 ]]; then
     echo "Virtual environment not found: $venv_path" >&2
